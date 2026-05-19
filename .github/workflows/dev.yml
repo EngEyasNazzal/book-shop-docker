@@ -13,20 +13,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-    - name: Create Artifact
-    run: |
-      mkdir -p /tmp/artifacts
-      tar -czf /tmp/artifacts/app.tar.gz \
-      --exclude=.git \
-      --exclude=artifacts \
-      --exclude=__pycache__ \
-      .
+      - name: Create Artifact
+        run: |
+          tar -czf /tmp/app.tar.gz \
+          --exclude=.git \
+          --exclude=artifacts \
+          --exclude=__pycache__ \
+          .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: django-app
-          path: /tmp/artifacts/app.tar.gz
+          path: /tmp/app.tar.gz
 
   docker:
     needs: build
