@@ -5,47 +5,42 @@ on:
     branches:
       - dev
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  dev:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Create Artifact
+      - name: Create Unique Artifact
         run: |
-          tar -czf /tmp/app.tar.gz \
-          --exclude=.git \
-          --exclude=artifacts \
-          --exclude=__pycache__ \
-          .
+          mkdir -p artifacts
+          tar -czf artifacts/app-${{ github.sha }}.tar.gz \
+            --exclude=.git \
+            --exclude=artifacts \
+            --exclude=__pycache__ \
+            .
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: django-app
-          path: /tmp/app.tar.gz
+      - name: Commit Artifact Back To Repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add artifacts/
+          git commit -m "Add dev artifact ${{ github.sha }}" || echo "No artifact changes"
+          git push origin dev
 
-  docker:
-    needs: build
-    runs-on: ubuntu-latest
+      - name: Build Docker Image From Artifact
+        run: |
+          docker build \
+            --build-arg ARTIFACT=artifacts/app-${{ github.sha }}.tar.gz \
+            -t bookshop-dev:${{ github.sha }} .
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: django-app
-          path: artifacts
-
-      - name: Rename Artifact
-        run: mv artifacts/app.tar.gz artifacts/app.tar.gz || true
-
-      - name: Build Docker Image
-        run: docker build -t django-dev .
-
-      - name: Run Docker Container
-        run: docker run -d -p 8000:8000 django-dev
+      - name: Run Container Test
+        run: |
+          docker run -d -p 8000:8000 --name bookshop-dev bookshop-dev:${{ github.sha }}
+          sleep 10
+          docker ps
