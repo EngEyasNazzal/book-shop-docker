@@ -33,8 +33,10 @@ jobs:
           docker build \
             --build-arg ARTIFACT=artifacts/test-app-${{ github.sha }}.tar.gz \
             -t ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:test-latest \
             .
 
       - name: Push Docker Image To Docker Hub
         run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:test-latest
