@@ -1,0 +1,51 @@
+name: Dev Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Artifact
+        run: |
+          tar -czf app.tar.gz \
+          --exclude=.git \
+          --exclude=artifacts \
+          --exclude=__pycache__ \
+          .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-app
+          path: app.tar.gz
+
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: django-app
+          path: artifacts
+
+      - name: Rename Artifact
+        run: mv artifacts/app.tar.gz artifacts/app.tar.gz || true
+
+      - name: Build Docker Image
+        run: docker build -t django-dev .
+
+      - name: Run Docker Container
+        run: docker run -d -p 8000:8000 django-dev
