@@ -15,7 +15,7 @@ jobs:
 
       - name: Create Artifact
         run: |
-          tar -czf app.tar.gz \
+          tar -czf /tmp/app.tar.gz \
           --exclude=.git \
           --exclude=artifacts \
           --exclude=__pycache__ \
@@ -25,7 +25,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: django-app
-          path: app.tar.gz
+          path: /tmp/app.tar.gz
 
   docker:
     needs: build
