@@ -1,0 +1,42 @@
+name: Test Pipeline
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Create Fresh Artifact
+        run: |
+          mkdir -p artifacts
+          tar -czf artifacts/test-app-${{ github.sha }}.tar.gz \
+            --exclude=.git \
+            --exclude=artifacts \
+            --exclude=__pycache__ \
+            .
+
+      - name: Login To Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker Image From Fresh Artifact
+        run: |
+          docker build \
+            --build-arg ARTIFACT=artifacts/test-app-${{ github.sha }}.tar.gz \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:test-latest \
+            .
+
+      - name: Push Docker Image To Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/book-shop-docker:test-latest
